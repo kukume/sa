@@ -31,7 +31,9 @@ class RoleEntity {
     var permissions: MutableSet<PermissionEntity> = mutableSetOf()
 }
 
-interface RoleRepository: JpaRepository<RoleEntity, Int>
+interface RoleRepository: JpaRepository<RoleEntity, Int> {
+    fun findByName(name: String): RoleEntity?
+}
 
 @Service
 class RoleService(
@@ -56,4 +58,6 @@ class RoleService(
             roleEntity?.let { roleRepository.delete(it) }
         }
     }
+
+    fun findByName(name: String) = roleRepository.findByName(name)
 }

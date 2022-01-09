@@ -31,9 +31,31 @@ class UserController(
 ) {
 
     @PostMapping("login")
-    fun login(@RequestBody params: UserEntity): Result<Any> {
-        val userEntity = userService.findByUsername(params.username) ?: return Result.failure("用户名或密码错误")
-        val enPass = SaSecureUtil.md5BySalt(params.password, userEntity.salt)
+    @Transactional
+    fun login(@RequestBody userLoginParams: UserLoginParams): Result<Any> {
+        val username = userLoginParams.username
+        val password = userLoginParams.password
+        val userEntity = userService.findByUsername(username)
+            ?: return if (username == "admin") {
+                val salt = MyUtils.randomStr(6)
+                val enPass = SaSecureUtil.md5BySalt(password, salt)
+                val saveUserEntity = UserEntity()
+                saveUserEntity.username = username
+                saveUserEntity.password = enPass
+                saveUserEntity.salt = salt
+                var roleEntity = roleService.findByName("admin")
+                if (roleEntity == null) {
+                    roleEntity = RoleEntity()
+                    roleEntity.name = "admin"
+                    roleEntity.description = "管理员"
+                    roleService.save(roleEntity)
+                }
+                saveUserEntity.roles.add(roleEntity)
+                userService.save(saveUserEntity)
+                StpUtil.login(saveUserEntity.id)
+                Result.success("登录成功", StpUtil.getTokenInfo())
+            }else Result.failure("用户名或密码错误")
+        val enPass = SaSecureUtil.md5BySalt(password, userEntity.salt)
         return if (enPass != userEntity.password) Result.failure("用户名或密码错误")
         else {
             StpUtil.login(userEntity.id)
@@ -50,13 +72,15 @@ class UserController(
     }
 
     @PostMapping("register")
-    suspend fun register(@RequestBody params: UserEntity): Result<Any> {
-        val query = userService.findByUsername(params.username)
+    suspend fun register(@RequestBody userLoginParams: UserLoginParams): Result<Any> {
+        val username = userLoginParams.username
+        val password = userLoginParams.password
+        val query = userService.findByUsername(username)
         if (query != null) return Result.failure("该用户名已存在")
         val salt = MyUtils.randomStr(6)
-        val enPass = SaSecureUtil.md5BySalt(params.username, salt)
+        val enPass = SaSecureUtil.md5BySalt(password, salt)
         val userEntity = UserEntity()
-        userEntity.username = params.username
+        userEntity.username = username
         userEntity.password = enPass
         userEntity.salt = salt
         userService.save(userEntity)
@@ -303,6 +327,8 @@ class SystemController(
         }
     }
 }
+
+data class UserLoginParams(var username: String, var password: String)
 
 class UserSaveParams {
     var id: Int? = null

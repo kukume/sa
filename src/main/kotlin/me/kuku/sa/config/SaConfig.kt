@@ -3,7 +3,6 @@ package me.kuku.sa.config
 import cn.dev33.satoken.reactor.filter.SaReactorFilter
 import cn.dev33.satoken.stp.StpInterface
 import cn.dev33.satoken.stp.StpUtil
-import me.kuku.pojo.Result
 import me.kuku.sa.entity.UserService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean

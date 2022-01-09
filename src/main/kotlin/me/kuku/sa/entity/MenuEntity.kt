@@ -4,6 +4,7 @@ import com.alibaba.fastjson.annotation.JSONField
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import javax.persistence.*
 
 @Entity
@@ -47,7 +48,19 @@ class MenuService(
 ) {
     fun save(menuEntity: MenuEntity): MenuEntity = menuRepository.save(menuEntity)
 
-    fun deleteAllById(id: List<Int>) = menuRepository.deleteAllById(id)
+    @Transactional
+    fun deleteAllById(id: List<Int>) {
+        for (i in id) {
+            val menuEntity = findById(i) ?: continue
+            val parent = menuEntity.parent
+            if (parent == null) menuRepository.delete(menuEntity)
+            else {
+                parent.menus.remove(menuEntity)
+                save(parent)
+                menuRepository.delete(menuEntity)
+            }
+        }
+    }
 
     fun findAll(): List<MenuEntity> {
         return menuRepository.findByParentIsNull()
