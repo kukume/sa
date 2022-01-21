@@ -44,7 +44,8 @@ interface MenuRepository: JpaRepository<MenuEntity, Int> {
 
 @Service
 class MenuService(
-    private val menuRepository: MenuRepository
+    private val menuRepository: MenuRepository,
+    private val permissionService: PermissionService
 ) {
     fun save(menuEntity: MenuEntity): MenuEntity = menuRepository.save(menuEntity)
 
@@ -53,12 +54,23 @@ class MenuService(
         for (i in id) {
             val menuEntity = findById(i) ?: continue
             val parent = menuEntity.parent
+            checkPermission(menuEntity)
             if (parent == null) menuRepository.delete(menuEntity)
             else {
                 parent.menus.remove(menuEntity)
                 save(parent)
                 menuRepository.delete(menuEntity)
             }
+        }
+    }
+
+    private fun checkPermission(menuEntity: MenuEntity) {
+        val permissionEntity = menuEntity.permission
+        if (permissionEntity != null) {
+            permissionService.deleteById(permissionEntity.id!!)
+        }
+        for (child in menuEntity.menus) {
+            checkPermission(child)
         }
     }
 

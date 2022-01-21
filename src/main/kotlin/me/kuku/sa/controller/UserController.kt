@@ -12,10 +12,10 @@ import me.kuku.pojo.ResultStatus
 import me.kuku.sa.entity.*
 import me.kuku.sa.pojo.Page
 import me.kuku.sa.pojo.Status
+import me.kuku.sa.utils.convert
 import me.kuku.utils.MyUtils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.bind.annotation.*
@@ -90,8 +90,8 @@ class UserController(
 
     @GetMapping
     @Transactional
-    fun list(page: Page):  Result<*>{
-        return Result.success(userService.findAll(page.toPageRequest()))
+    fun list(userEntity: UserEntity, page: Page): Result<*>{
+        return Result.success(userService.findAll(userEntity, page.toPageRequest()))
     }
 
     @GetMapping("{id}")
@@ -103,7 +103,7 @@ class UserController(
 
     @PostMapping
     @Transactional
-    fun save(@RequestBody userSaveParams: UserSaveParams): Result<Void> {
+    fun save(@RequestBody userSaveParams: UserSaveParams): Result<*> {
         return kotlin.runCatching {
             val userEntity = if (userSaveParams.id == null) UserEntity()
             else userService.findById(userSaveParams.id!!) ?: return ResultStatus.DATA_NOT_EXISTS.toResult()
@@ -156,9 +156,10 @@ class SystemController(
 
         "role".nest {
             GET("") {
-                val page = it.queryParam("page").orElse("1").toInt()
-                val size = it.queryParam("size").orElse("20").toInt()
-                val re = roleService.findAll(PageRequest.of(page - 1, size))
+                val queryParams = it.queryParams()
+                val page = queryParams.convert<Page>()
+                val roleEntity = queryParams.convert<RoleEntity>()
+                val re = roleService.findAll(roleEntity, page.toPageRequest())
                 ok().bodyValueAndAwait(Result.success(re))
             }
             GET("n/all") {
@@ -198,9 +199,10 @@ class SystemController(
 
         "permission".nest {
             GET("") {
-                val page = it.queryParam("page").orElse("1").toInt()
-                val size = it.queryParam("size").orElse("20").toInt()
-                val re = permissionService.findAll(PageRequest.of(page - 1, size))
+                val queryParams = it.queryParams()
+                val page = queryParams.convert<Page>()
+                val permissionEntity = queryParams.convert<PermissionEntity>()
+                val re = permissionService.findAll(permissionEntity, page.toPageRequest())
                 ok().bodyValueAndAwait(Result.success(re))
             }
             GET("{id}") {

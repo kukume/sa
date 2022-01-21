@@ -2,7 +2,9 @@ package me.kuku.sa.utils
 
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
+import com.alibaba.fastjson.TypeReference
 import kotlinx.coroutines.reactive.awaitSingle
+import me.kuku.utils.toJSONString
 import org.springframework.cache.Cache
 import org.springframework.http.MediaType
 import org.springframework.http.codec.multipart.FilePart
@@ -13,7 +15,7 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.awaitFormData
 import org.springframework.web.reactive.function.server.bodyToMono
 
-suspend inline fun <reified T: Any> ServerRequest.receiveAwait(): T {
+suspend inline fun <reified T: Any> ServerRequest.awaitReceive(): T {
     return when (this.headers().contentType().get().subtype) {
         MediaType.APPLICATION_JSON.subtype -> {
             this.bodyToMono<T>().awaitSingle()
@@ -70,6 +72,11 @@ fun MultiValueMap<String, Part>.filePart(name: String): FilePart {
 
 fun MultiValueMap<String, String>.getFirstOrFail(name: String): String {
     return this.getFirst(name) ?: throw MissingRequestParameterException(name)
+}
+
+inline fun <reified T: Any> MultiValueMap<String, String>.convert(): T {
+    val map = this.toSingleValueMap()
+    return JSON.parseObject(map.toJSONString(), object: TypeReference<T>() {})
 }
 
 fun ServerRequest.queryParamOrFail(name: String): String {

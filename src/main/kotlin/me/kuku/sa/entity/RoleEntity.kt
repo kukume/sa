@@ -4,9 +4,11 @@ package me.kuku.sa.entity
 
 import com.alibaba.fastjson.annotation.JSONField
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.querydsl.core.BooleanBuilder
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.querydsl.QuerydslPredicateExecutor
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import javax.persistence.*
@@ -31,7 +33,7 @@ class RoleEntity {
     var permissions: MutableSet<PermissionEntity> = mutableSetOf()
 }
 
-interface RoleRepository: JpaRepository<RoleEntity, Int> {
+interface RoleRepository: JpaRepository<RoleEntity, Int>, QuerydslPredicateExecutor<RoleEntity> {
     fun findByName(name: String): RoleEntity?
 }
 
@@ -41,6 +43,14 @@ class RoleService(
     private val userRepository: UserRepository
 ) {
     fun findAll(pageable: Pageable): Page<RoleEntity> = roleRepository.findAll(pageable)
+
+    fun findAll(roleEntity: RoleEntity, pageable: Pageable): Page<RoleEntity> {
+        val q = QRoleEntity.roleEntity
+        val bb = BooleanBuilder()
+        if (roleEntity.name.isNotEmpty()) bb.and(q.name.like("%${roleEntity.name}%"))
+        if (roleEntity.description.isNotEmpty()) bb.and(q.description.like("%${roleEntity.description}%"))
+        return roleRepository.findAll(bb, pageable)
+    }
 
     fun findById(id: Int): RoleEntity? = roleRepository.findById(id).orElse(null)
 

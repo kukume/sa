@@ -4,9 +4,11 @@ package me.kuku.sa.entity
 
 import com.alibaba.fastjson.annotation.JSONField
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.querydsl.core.BooleanBuilder
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.querydsl.QuerydslPredicateExecutor
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,7 +34,7 @@ class PermissionEntity {
 }
 
 
-interface PermissionRepository: JpaRepository<PermissionEntity, Int> {
+interface PermissionRepository: JpaRepository<PermissionEntity, Int>, QuerydslPredicateExecutor<PermissionEntity> {
     fun findByName(name: String): PermissionEntity?
 }
 
@@ -46,16 +48,29 @@ class PermissionService(
     @Transactional
     fun deleteAllById(id: List<Int>) {
         for (i in id) {
-            val permissionEntity = permissionRepository.findByIdOrNull(i)
-            permissionEntity?.roles?.forEach {
-                it.permissions.remove(permissionEntity)
-                roleRepository.save(it)
-            }
-            permissionEntity?.let { permissionRepository.delete(it) }
+            deleteById(i)
         }
     }
 
+    @Transactional
+    fun deleteById(id: Int) {
+        val permissionEntity = permissionRepository.findByIdOrNull(id)
+        permissionEntity?.roles?.forEach {
+            it.permissions.remove(permissionEntity)
+            roleRepository.save(it)
+        }
+        permissionEntity?.let { permissionRepository.delete(it) }
+    }
+
     fun findAll(pageable: Pageable): Page<PermissionEntity> = permissionRepository.findAll(pageable)
+
+    fun findAll(permissionEntity: PermissionEntity, pageable: Pageable): Page<PermissionEntity> {
+        val q = QPermissionEntity.permissionEntity
+        val bb = BooleanBuilder()
+        if (permissionEntity.name.isNotEmpty()) bb.and(q.name.like("%${permissionEntity.name}%"))
+        if (permissionEntity.description.isNotEmpty()) bb.and(q.description.like("%${permissionEntity.description}%"))
+        return permissionRepository.findAll(bb, pageable)
+    }
 
     fun findAll(): List<PermissionEntity> = permissionRepository.findAll()
 

@@ -1,11 +1,13 @@
 package me.kuku.sa.entity
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.querydsl.core.BooleanBuilder
 import me.kuku.sa.pojo.Status
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.querydsl.QuerydslPredicateExecutor
 import org.springframework.stereotype.Service
 import javax.persistence.*
 
@@ -28,7 +30,7 @@ class UserEntity {
     var status: Status = Status.ON
 }
 
-interface UserRepository: JpaRepository<UserEntity, Int> {
+interface UserRepository: JpaRepository<UserEntity, Int>, QuerydslPredicateExecutor<UserEntity> {
     fun findByUsername(username: String): UserEntity?
 }
 
@@ -46,6 +48,14 @@ class UserService {
     fun save(userEntity: UserEntity): UserEntity = userRepository.save(userEntity)
 
     fun findAll(pageable: Pageable): Page<UserEntity> = userRepository.findAll(pageable)
+
+    fun findAll(userEntity: UserEntity, pageable: Pageable): Page<UserEntity> {
+        val q = QUserEntity.userEntity
+        val bl = BooleanBuilder()
+        if (userEntity.username.isNotEmpty()) bl.and(q.username.like("%${userEntity.username}%"))
+        bl.and(q.status.eq(userEntity.status))
+        return userRepository.findAll(bl, pageable)
+    }
 
     fun deleteAllById(id: List<Int>) = userRepository.deleteAllById(id)
 }
