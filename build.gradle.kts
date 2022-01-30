@@ -1,5 +1,4 @@
 val utilsVersion = "0.3.7"
-val h2Version = "1.4.200"
 val saVersion = "1.28.0"
 val queryDslVersion = "5.0.0"
 val coroutinesVersion = "1.6.0-native-mt"
