@@ -27,7 +27,8 @@ import org.springframework.web.reactive.function.server.coRouter
 @RequestMapping("/user")
 class UserController(
     private val userService: UserService,
-    private val roleService: RoleService
+    private val roleService: RoleService,
+    private val configService: ConfigService
 ) {
 
     @PostMapping("login")
@@ -73,6 +74,10 @@ class UserController(
 
     @PostMapping("register")
     suspend fun register(@RequestBody userLoginParams: UserLoginParams): Result<Any> {
+        val isRegister = configService.findByConfigType(ConfigType.REGISTER)
+        if (isRegister != null && isRegister.content.register == true) {
+            return Result.failure(520, "管理员未开启注册")
+        }
         val username = userLoginParams.username
         val password = userLoginParams.password
         val query = userService.findByUsername(username)
@@ -83,6 +88,15 @@ class UserController(
         userEntity.username = username
         userEntity.password = enPass
         userEntity.salt = salt
+        val configEntity = configService.findByConfigType(ConfigType.DEFAULT_ROLE)
+        if (configEntity != null) {
+            val defaultRole = configEntity.content.defaultRole
+            if (defaultRole != null) {
+                roleService.findByName(defaultRole)?.let {
+                    userEntity.roles.add(it)
+                }
+            }
+        }
         userService.save(userEntity)
         StpUtil.login(userEntity.id)
         return Result.success(StpUtil.getTokenInfo())
@@ -161,6 +175,12 @@ class SystemController(
                 val roleEntity = queryParams.convert<RoleEntity>()
                 val re = roleService.findAll(roleEntity, page.toPageRequest())
                 ok().bodyValueAndAwait(Result.success(re))
+            }
+            GET("name/all") {
+                val list = roleService.findAll()
+                val returnList = mutableListOf<String>()
+                list.forEach { returnList.add(it.name) }
+                ok().bodyValueAndAwait(Result.success(returnList))
             }
             GET("n/all") {
                 val list = roleService.findAll()

@@ -1,12 +1,13 @@
 package me.kuku.sa.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.querydsl.core.BooleanBuilder
 import me.kuku.sa.utils.plus
 import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.domain.Example
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.querydsl.QuerydslPredicateExecutor
 import org.springframework.http.HttpMethod
@@ -27,6 +28,7 @@ class ExceptionLogEntity {
     var stackTrace: String = ""
     var url: String = ""
     @CreatedDate
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     var localDateTime: LocalDateTime = LocalDateTime.now()
 }
 
@@ -44,8 +46,8 @@ class ExceptionLogService(
     fun findByAll(exceptionLogEntity: ExceptionLogEntity, pageable: Pageable): Page<ExceptionLogEntity> {
         with(QExceptionLogEntity.exceptionLogEntity) {
             val bb = BooleanBuilder()
-            if (exceptionLogEntity.path.isNotEmpty()) bb + path.eq(exceptionLogEntity.path)
-            return exceptionLogRepository.findAll(bb, pageable)
+            if (exceptionLogEntity.path.isNotEmpty()) bb + path.like("%${exceptionLogEntity.path}%")
+            return exceptionLogRepository.findAll(bb, (pageable as PageRequest).withSort(Sort.by("id").descending()))
         }
     }
 
