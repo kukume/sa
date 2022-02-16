@@ -2,11 +2,14 @@ package me.kuku.sa.config
 
 import com.alibaba.fastjson.JSON
 import me.kuku.pojo.Result
+import me.kuku.sa.entity.CallLoggingEntity
+import me.kuku.sa.entity.CallLoggingService
 import me.kuku.sa.entity.ExceptionLogEntity
 import me.kuku.sa.entity.ExceptionLogService
 import me.kuku.sa.utils.MissingRequestParameterException
 import me.kuku.utils.JobManager
 import me.kuku.utils.OkHttpUtils
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -74,6 +77,32 @@ class Filter: WebFilter {
                     )
                 )
             )
+        }
+    }
+}
+
+@Component
+@Order(200)
+class CallLogging(
+    private val callLoggingService: CallLoggingService
+): WebFilter {
+
+    private val log = LoggerFactory.getLogger(CallLogging::class.java)
+
+    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
+        return chain.filter(exchange).doFinally {
+            // 404 Not Found: GET - /favicon.ico
+            val request = exchange.request
+            val response = exchange.response
+            val statusCode = response.statusCode ?: return@doFinally
+            log.info("${statusCode.value()} ${statusCode.name}: ${request.methodValue} - ${request.path}")
+            val callLoggingEntity = CallLoggingEntity()
+            callLoggingEntity.path = request.path.value()
+            callLoggingEntity.httpMethod = request.method
+            callLoggingEntity.statusCodeValue = statusCode.value()
+            callLoggingEntity.statusCodeName = statusCode.name
+            callLoggingEntity.userAgent = request.headers.getFirst("user-agent") ?: ""
+            callLoggingService.save(callLoggingEntity)
         }
     }
 }

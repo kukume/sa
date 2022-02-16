@@ -1,4 +1,4 @@
-val utilsVersion = "0.3.7"
+val utilsVersion = "0.3.10"
 val saVersion = "1.28.0"
 val queryDslVersion = "5.0.0"
 val coroutinesVersion = "1.6.0-native-mt"
@@ -27,7 +27,6 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutinesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     compileOnly("org.springframework.boot:spring-boot-devtools")
