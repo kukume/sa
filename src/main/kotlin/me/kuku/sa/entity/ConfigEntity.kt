@@ -1,8 +1,10 @@
 package me.kuku.sa.entity
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.vladmihalcea.hibernate.type.json.JsonType
+import me.kuku.sa.pojo.Status
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.TypeDef
 import org.springframework.data.jpa.repository.JpaRepository
@@ -28,7 +30,8 @@ class ConfigEntity {
 @JsonFormat(shape = JsonFormat.Shape.NUMBER)
 enum class ConfigType(val value: String) {
     REGISTER("是否开启注册"),
-    DEFAULT_ROLE("注册用户默认分配的角色")
+    DEFAULT_ROLE("注册用户默认分配的角色"),
+    H_CAPTCHA("hCaptcha验证码")
     ;
 
     companion object {
@@ -45,7 +48,8 @@ enum class ConfigType(val value: String) {
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ConfigContent(
     var register: Boolean? = null,
-    var defaultRole: String? = null
+    var defaultRole: String? = null,
+    var hCaptcha: HCaptcha? = null
 )
 
 interface ConfigRepository: JpaRepository<ConfigEntity, Int> {
@@ -62,3 +66,10 @@ class ConfigService(
 
     fun findAll(): List<ConfigEntity> = configRepository.findAll()
 }
+
+data class HCaptcha(
+    var status: Status = Status.OFF,
+    var siteKey: String = "",
+    @JsonIgnore
+    var secret: String = ""
+)

@@ -10,6 +10,7 @@ import kotlinx.coroutines.reactive.awaitFirst
 import me.kuku.pojo.Result
 import me.kuku.pojo.ResultStatus
 import me.kuku.sa.entity.*
+import me.kuku.sa.logic.HCaptchaLogic
 import me.kuku.sa.pojo.Page
 import me.kuku.sa.pojo.Status
 import me.kuku.sa.utils.convert
@@ -28,12 +29,15 @@ import org.springframework.web.reactive.function.server.coRouter
 class UserController(
     private val userService: UserService,
     private val roleService: RoleService,
-    private val configService: ConfigService
+    private val configService: ConfigService,
+    private val hCaptchaLogic: HCaptchaLogic
 ) {
 
     @PostMapping("login")
     @Transactional
     fun login(@RequestBody userLoginParams: UserLoginParams): Result<Any> {
+        val hCaptcha = userLoginParams.hCaptcha
+        hCaptchaLogic.verify(hCaptcha)
         val username = userLoginParams.username
         val password = userLoginParams.password
         val userEntity = userService.findByUsername(username)
@@ -350,7 +354,7 @@ class SystemController(
     }
 }
 
-data class UserLoginParams(var username: String, var password: String)
+data class UserLoginParams(var username: String, var password: String, var hCaptcha: String = "")
 
 class UserSaveParams {
     var id: Int? = null

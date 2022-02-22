@@ -34,6 +34,15 @@ class ConfigController(
                 ok().bodyValueAndAwait(Result.success(list))
             }
 
+            GET("configType/{type}") {
+                val type = it.pathVariable("type").toIntOrNull() ?: return@GET ok().bodyValueAndAwait(Result.failure("类型不正确", null))
+                val configType = ConfigType.byOrdinal(type) ?: return@GET ok().bodyValueAndAwait(Result.failure<Unit>("类型不正确"))
+                val configEntity = configService.findByConfigType(configType)
+                if (configEntity == null)
+                 ok().bodyValueAndAwait(Result.failure<Unit>(ResultStatus.DATA_NOT_EXISTS))
+                else ok().bodyValueAndAwait(Result.success(configEntity))
+            }
+
             POST("{configType}") {
                 val configContent = it.awaitReceive<ConfigContent>()
                 val type = it.pathVariable("configType").toInt()
