@@ -1,7 +1,6 @@
 package me.kuku.sa.entity
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.vladmihalcea.hibernate.type.json.JsonType
 import me.kuku.sa.pojo.Status
@@ -70,6 +69,5 @@ class ConfigService(
 data class HCaptcha(
     var status: Status = Status.OFF,
     var siteKey: String = "",
-    @JsonIgnore
     var secret: String = ""
 )

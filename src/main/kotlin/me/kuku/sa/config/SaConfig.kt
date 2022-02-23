@@ -17,7 +17,7 @@ class SaTokenConfigure {
     fun saReactorFilter(): SaReactorFilter {
         return SaReactorFilter()
             .addInclude("/**")
-            .addExclude("/user/login", "/user/register", "/config/configType/2")
+            .addExclude("/user/login", "/user/register", "/config/captcha")
             .setAuth {
                 StpUtil.checkLogin()
             }
