@@ -14,7 +14,7 @@ import javax.persistence.*
 @Entity
 @Table(name = "user_")
 @JsonIgnoreProperties("password", "salt")
-class UserEntity {
+class UserEntity: BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Int? = null
@@ -26,12 +26,11 @@ class UserEntity {
     @JoinTable(name = "user_role",
         joinColumns = [JoinColumn(name = "user_id")], inverseJoinColumns = [JoinColumn(name = "role_id")])
     var roles: MutableSet<RoleEntity> = mutableSetOf()
-    @Enumerated
-    var status: Status = Status.ON
 }
 
 interface UserRepository: JpaRepository<UserEntity, Int>, QuerydslPredicateExecutor<UserEntity> {
     fun findByUsername(username: String): UserEntity?
+    fun findByUsernameAndStatus(username: String, status: Status): UserEntity?
 }
 
 
@@ -45,6 +44,8 @@ class UserService {
 
     fun findByUsername(username: String): UserEntity? = userRepository.findByUsername(username)
 
+    fun findByUsernameAndStatus(username: String, status: Status) = userRepository.findByUsernameAndStatus(username, status)
+
     fun save(userEntity: UserEntity): UserEntity = userRepository.save(userEntity)
 
     fun findAll(pageable: Pageable): Page<UserEntity> = userRepository.findAll(pageable)
@@ -53,7 +54,7 @@ class UserService {
         val q = QUserEntity.userEntity
         val bl = BooleanBuilder()
         if (userEntity.username.isNotEmpty()) bl.and(q.username.like("%${userEntity.username}%"))
-        bl.and(q.status.eq(userEntity.status))
+        if (userEntity.status != null) bl.and(q.status.eq(userEntity.status))
         return userRepository.findAll(bl, pageable)
     }
 

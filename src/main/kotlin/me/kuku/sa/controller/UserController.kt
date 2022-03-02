@@ -40,8 +40,15 @@ class UserController(
         hCaptchaLogic.verify(hCaptcha)
         val username = userLoginParams.username
         val password = userLoginParams.password
-        val userEntity = userService.findByUsername(username)
+        val userEntity = userService.findByUsernameAndStatus(username, Status.ON)
             ?: return if (username == "admin") {
+                val adminEntity = userService.findByUsername(username)
+                if (adminEntity != null) {
+                    adminEntity.status = Status.ON
+                    userService.save(adminEntity)
+                    StpUtil.login(adminEntity.id)
+                    return Result.success("登录成功", StpUtil.getTokenInfo())
+                }
                 val salt = MyUtils.randomStr(6)
                 val enPass = SaSecureUtil.md5BySalt(password, salt)
                 val saveUserEntity = UserEntity()
@@ -211,7 +218,7 @@ class SystemController(
                     }
                     Result.success(roleService.save(roleEntity))
                 }
-                ok().bodyValueAndAwait(result)
+                ok().bodyValueAndAwait(result!!)
 
             }
             DELETE("") {
@@ -330,7 +337,7 @@ class SystemController(
                     }
                     Result.success(menuService.save(menuEntity))
                 }
-                ok().bodyValueAndAwait(result)
+                ok().bodyValueAndAwait(result!!)
             }
             DELETE("") {
                 val ids = it.bodyToMono<List<Int>>().awaitFirst()
