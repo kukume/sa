@@ -35,6 +35,9 @@ class MenuEntity {
     @JSONField(serialize = false)
     var permission: PermissionEntity? = null
 
+    var hidden: Boolean = false
+
+    var layout: Boolean = false
 }
 
 interface MenuRepository: JpaRepository<MenuEntity, Int> {

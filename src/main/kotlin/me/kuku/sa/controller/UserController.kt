@@ -60,9 +60,10 @@ class UserController(
                     roleEntity = RoleEntity()
                     roleEntity.name = "admin"
                     roleEntity.description = "管理员"
-                    roleService.save(roleEntity)
+//                    roleService.save(roleEntity)
                 }
                 saveUserEntity.roles.add(roleEntity)
+                roleEntity.users.add(saveUserEntity)
                 userService.save(saveUserEntity)
                 StpUtil.login(saveUserEntity.id)
                 Result.success("登录成功", StpUtil.getTokenInfo())
@@ -130,7 +131,11 @@ class UserController(
     @Transactional
     fun save(@RequestBody userSaveParams: UserSaveParams): Result<*> {
         return kotlin.runCatching {
-            val userEntity = if (userSaveParams.id == null) UserEntity()
+            val userEntity = if (userSaveParams.id == null) {
+                val queryEntity = userService.findByUsername(userSaveParams.username)
+                if (queryEntity != null) return Result.failure("该用户名已存在", null)
+                UserEntity()
+            }
             else userService.findById(userSaveParams.id!!) ?: return ResultStatus.DATA_NOT_EXISTS.toResult()
             userEntity.username = userSaveParams.username
             if ("******" != userSaveParams.password) {
@@ -262,7 +267,7 @@ class SystemController(
                 ok().bodyValueAndAwait(Result.success(re))
             }
             GET("tree") {
-                val list = menuService.findAll()
+                val list = menuService.findAll().filter { menuEntity -> menuEntity.layout }
                 val jsonArray = JSON.parseArray(JSON.toJSONString(list))
                 jsonArray.map { it as JSONObject }.forEach {
                     updateKey(it)
@@ -308,7 +313,7 @@ class SystemController(
             }
             POST("") {
                 val menuSaveParams = it.bodyToMono<MenuSaveParams>().awaitFirst()
-                if (menuSaveParams.path.contains('/')) return@POST ok().bodyValueAndAwait(Result.failure<Unit>("路径中不允许含有/"))
+                if (menuSaveParams.layout && menuSaveParams.path.contains('/')) return@POST ok().bodyValueAndAwait(Result.failure<Unit>("路径中不允许含有/"))
                 val result = transactionTemplate.execute {
                     val menuEntity = if (menuSaveParams.id != null)
                         menuService.findById(menuSaveParams.id!!) ?: return@execute ResultStatus.DATA_NOT_EXISTS.toResult()
@@ -318,11 +323,13 @@ class SystemController(
                     menuEntity.path = menuSaveParams.path
                     menuEntity.icon = menuSaveParams.icon
                     menuEntity.order = menuSaveParams.order
+                    menuEntity.hidden = menuSaveParams.hidden
+                    menuEntity.layout = menuSaveParams.layout
                     if (menuSaveParams.parentId != null) {
                         val parentEntity = menuService.findById(menuSaveParams.parentId!!)
                             ?: return@execute ResultStatus.DATA_NOT_EXISTS.toResult()
                         menuEntity.parent = parentEntity
-                    }
+                    } else menuEntity.parent = null
                     var permissionParams = menuSaveParams.permission
                     if (permissionParams.name.isNotEmpty()) {
                         val alreadyPermission = permissionService.findByName(permissionParams.name)
@@ -387,4 +394,6 @@ class MenuSaveParams {
     var parentId: Int? = null
     var order: Int = 0
     var permission: PermissionEntity = PermissionEntity()
+    var hidden: Boolean = false
+    var layout: Boolean = true
 }

@@ -1,5 +1,6 @@
 package me.kuku.sa.entity
 
+import cn.dev33.satoken.exception.NotLoginException
 import cn.dev33.satoken.stp.StpUtil
 import me.kuku.sa.pojo.Status
 import org.springframework.context.annotation.Configuration
@@ -40,7 +41,11 @@ class BaseAuditor(
 ): AuditorAware<String> {
 
     override fun getCurrentAuditor(): Optional<String> {
-        val loginId = StpUtil.getLoginId() ?: return Optional.of("游客")
+        val loginId = try {
+            StpUtil.getLoginId()
+        } catch (e: NotLoginException) {
+            return Optional.of("游客")
+        }
         val id = loginId.toString().toInt()
         val userEntity = userService.findById(id) ?: return Optional.of("无此用户")
         return Optional.of(userEntity.username)

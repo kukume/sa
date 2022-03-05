@@ -1,8 +1,14 @@
 server:
   port: 5460
 
+logging:
+  level:
+    root: info
+
 spring:
   jackson:
+    serialization:
+      WRITE_ENUMS_USING_INDEX: true
     deserialization:
       READ_UNKNOWN_ENUM_VALUES_AS_NULL: true
   jpa:

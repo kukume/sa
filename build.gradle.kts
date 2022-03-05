@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val utilsVersion = "0.3.12"
-val saVersion = "1.28.0"
+val saVersion = "1.29.0"
 val queryDslVersion = "5.0.0"
 val coroutinesVersion = "1.6.0-native-mt"
 val okhttpVersion = "4.9.3"

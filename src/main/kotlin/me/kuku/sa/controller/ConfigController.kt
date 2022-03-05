@@ -37,7 +37,7 @@ class ConfigController(
             GET("captcha") {
                 val configEntity = configService.findByConfigType(ConfigType.H_CAPTCHA)
                 if (configEntity == null)
-                 ok().bodyValueAndAwait(Result.failure<Unit>(ResultStatus.DATA_NOT_EXISTS))
+                 ok().bodyValueAndAwait(Result.success(null))
                 else {
                     configEntity.content.hCaptcha?.secret = ""
                     ok().bodyValueAndAwait(Result.success(configEntity))
