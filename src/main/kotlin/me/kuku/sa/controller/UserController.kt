@@ -6,7 +6,9 @@ import cn.dev33.satoken.secure.SaSecureUtil
 import cn.dev33.satoken.stp.StpUtil
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.withContext
 import me.kuku.pojo.Result
 import me.kuku.pojo.ResultStatus
 import me.kuku.sa.entity.*
@@ -256,7 +258,9 @@ class SystemController(
             }
             DELETE("") {
                 val ids = it.bodyToMono<List<Int>>().awaitFirst()
-                permissionService.deleteAllById(ids)
+                withContext(Dispatchers.IO) {
+                    permissionService.deleteAllById(ids)
+                }
                 ok().bodyValueAndAwait(Result.success())
             }
         }
@@ -314,6 +318,7 @@ class SystemController(
             POST("") {
                 val menuSaveParams = it.bodyToMono<MenuSaveParams>().awaitFirst()
                 if (menuSaveParams.layout && menuSaveParams.path.contains('/')) return@POST ok().bodyValueAndAwait(Result.failure<Unit>("路径中不允许含有/"))
+                if (!menuSaveParams.layout && menuSaveParams.parentId != null) return@POST ok().bodyValueAndAwait(Result.failure<Unit>("非layout菜单不允许有parentId"))
                 val result = transactionTemplate.execute {
                     val menuEntity = if (menuSaveParams.id != null)
                         menuService.findById(menuSaveParams.id!!) ?: return@execute ResultStatus.DATA_NOT_EXISTS.toResult()
@@ -348,7 +353,9 @@ class SystemController(
             }
             DELETE("") {
                 val ids = it.bodyToMono<List<Int>>().awaitFirst()
-                menuService.deleteAllById(ids)
+                withContext(Dispatchers.IO) {
+                    menuService.deleteAllById(ids)
+                }
                 ok().bodyValueAndAwait(Result.success())
             }
         }

@@ -7,6 +7,7 @@ import me.kuku.sa.entity.CallLoggingService
 import me.kuku.sa.entity.ExceptionLogEntity
 import me.kuku.sa.entity.ExceptionLogService
 import me.kuku.sa.utils.MissingRequestParameterException
+import me.kuku.utils.JacksonUtils
 import me.kuku.utils.JobManager
 import me.kuku.utils.OkHttpUtils
 import org.slf4j.LoggerFactory
@@ -22,6 +23,7 @@ import reactor.core.publisher.Mono
 import reactor.netty.ByteBufMono
 import java.io.PrintWriter
 import java.io.StringWriter
+import javax.validation.ValidationException
 
 @Component
 class WebExceptionHandle(
@@ -74,6 +76,19 @@ class Filter: WebFilter {
                 Mono.just(
                     ByteBufMono.just(
                         response.bufferFactory().wrap(JSON.toJSONString(Result.failure<Unit>(400, it.message)).toByteArray())
+                    )
+                )
+            )
+        }.onErrorResume(ValidationException::class.java) {
+            val message = it.message
+            val response = exchange.response
+            val headers = response.headers
+            response.statusCode = HttpStatus.BAD_REQUEST
+            headers.contentType = MediaType.APPLICATION_JSON
+            response.writeAndFlushWith(
+                Mono.just (
+                    ByteBufMono.just(
+                        response.bufferFactory().wrap(JacksonUtils.toJsonString(Result.failure<Unit>(400, message)).toByteArray())
                     )
                 )
             )
